@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>数据库前端页面</title>
+    <!--    <link rel="stylesheet" href="bootstrap/dist/css/bootstrap.min.css">-->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" rel="stylesheet"/>
+
+    <script type="text/javascript" charset="UTF-8" src="jquery/jquery-3.5.1.min.js"></script>
+    <script type="text/javascript" charset="UTF-8" src="jquery/jquery.cookie.js"></script>
+
+    <script type="text/javascript" charset="UTF-8" src="echarts/dist/echarts.min.js"></script>
+
+    <script type="text/javascript" charset="UTF-8" src="gsap/dist/gsap.min.js"></script>
+
+    <!--    <script src="bootstrap/dist/js/bootstrap.min.js"></script>-->
+    <script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>
+    <script src="https://unpkg.com/gridjs/dist/gridjs.production.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            /*border: 1px solid black;*/
+        }
+
+        button {
+            margin: 5px;
+            font-size: 24px;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            outline: none;
+            padding: 5px;
+            color: white;
+            background-color: #00BFFF;
+            width: 96%;
+            border: none;
+        }
+
+        select {
+            padding: 5px;
+            border-radius: 10px;
+            color: grey;
+        }
+
+        a {
+            margin: 3px;
+            font-size: 28px;
+            letter-spacing: 5px;
+        }
+
+        ul li {
+            text-align: center;
+        }
+
+        .gridjs-search {
+            float: right;
+        }
+
+        .gridjs-pagination .gridjs-pages {
+            float: right;
+            width: 50%;
+        }
+
+        .gridjs-pagination .gridjs-pages button {
+            width: 40%;
+            margin-left: 5%;
+            display: inline-block;
+            padding: 5px 14px;
+            border: 1px solid #d2d6dc;
+            background-color: #fff;
+            border-right: none;
+            outline: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+    </style>
+
+    <script>
+        window.onload = function () {
+            initTable();
+            allEventListener();
+
+            getValue();
+        }
+
+        function getValue(){
+            // let gridArr=[];
+            // let obj=document.getElementById("showForInfoTable");
+            // console.log(obj);
+        }
+
+        function allEventListener() {
+            function semesterLis() {
+                document.getElementById('chooseSemester_1').addEventListener('change', function () {
+                    switch (this.value) {
+                        case '大一':
+                            getMoreInfo('1');
+                            break;
+                        case '大二':
+                            getMoreInfo('2');
+                            break;
+                        case '大三':
+                            getMoreInfo('3');
+                            break;
+                        case '大四':
+                            getMoreInfo('4');
+                            break;
+                        case '全学年':
+                            getMoreInfo('0');
+                            break;
+                        default:
+                            break;
+                    }
+
+                });
+            }
+            semesterLis();
+        }
+
+        function getMoreInfo(which) {
+            $.ajax({
+                type: "post",
+                url: "PHP//backendForDatabase.php",
+                data: {command: "studentScoreSemester",semester:which},
+                dataType: "json",
+                success: function (msg) {
+                    let result = jQuery.parseJSON(msg);
+
+                    let getData = [];
+
+                    for(let i = 0; result["Sno" + i]; i ++) {
+                        let newArray = [result["Sno"+i], result['Sname'+i],
+                            result['Cname'+i], result['Semester'+i], result['Score'+i]];
+
+                        getData[i] = (newArray);
+                    }
+
+                    addGrid(getData);
+                }
+            });
+        }
+
+        function addGrid(getData) {
+            let div = document.getElementById('showForInfoTable');
+
+            while(div.firstChild) {
+                div.removeChild(div.firstChild);
+            }
+
+            let grid = new gridjs.Grid({
+                columns: ["学生编号", "姓名", "课程名", "学年", "成绩"],
+                search: true,
+                data: getData,
+                pagination: {
+                    limit: 10,
+                    buttonsCount: false
+                },
+                sort: true
+            }).render(document.getElementById("showForInfoTable"));
+            console.log(grid);
+            grid.forceRender();
+        }
+
+        function initTable () {
+            $.ajax({
+                type: "post",
+                url: "PHP//backendForDatabase.php",
+                data: {command: "studentScoreSemester",semester:"1"},
+                dataType: "json",
+                success: function (msg) {
+                    // console.log(msg);
+                    let result = jQuery.parseJSON(msg);
+
+                    let getData = [];
+
+                    for(let i = 0; result["Sno" + i]; i ++) {
+                        let newArray = [result["Sno"+i], result['Sname'+i],
+                            result['Cname'+i], result['Semester'+i], result['Score'+i]];
+                        // console.log(newArray);
+                        getData[i] = (newArray);
+                    }
+                    // console.log(getData);
+                    addGrid(getData);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+<!--左部框体-->
+<div style="width: 25%;height: 100%;position: fixed;border-right: 1px solid gray;vertical-align: top;box-shadow: 5px 5px 5px grey;">
+<!--    左上部标题-->
+    <div style="font-size: 36px;text-align: center;padding: 5px;width: 100%;letter-spacing: 5px;">数据库前端页面</div>
+
+<!--    左部选择按钮组-->
+    <div style="text-align: center;">
+        <div class="btn-group-vertical" style="width: 100%;">
+            <div class="btn-group">
+                <button class="btnbtn-default dropdown-toggle" data-toggle="dropdown" type="button">学生成绩</button>
+                <ul class="dropdown-menu">
+                    <li><a href="http://localhost:63342/database/HTML/main.html">学年成绩统计</a></li>
+                    <li><a href="#">成绩名次排名</a></li>
+                    <li><a href="http://localhost:63342/database/HTML/totalCredit.html">总学分</a></li>
+                </ul>
+            </div>
+
+            <div class="btn-group">
+                <button class="btnbtn-default dropdown-toggle" data-toggle="dropdown" type="button">课程成绩</button>
+                <ul class="dropdown-menu">
+                    <li><a href="http://localhost:63342/database/HTML/classScore.html">每门课程平均成绩</a></li>
+                    <li><a href="#">成绩名次排名</a></li>
+                    <li><a href="http://localhost:63342/database/HTML/studentChooseClass.html">学生所选课程</a></li>
+                </ul>
+            </div>
+
+            <button onclick="window.location.href = 'http://localhost:63342/database/HTML/teacherClass.html'" class="btnbtn-default" type="button">教师任课课程查询</button>
+
+            <button onclick="window.location.href = 'http://localhost:63342/database/HTML/classCourse.html'" class="btnbtn-default" type="button">班级开设课设查询</button>
+
+            <div class="btn-group">
+                <button class="btnbtn-default dropdown-toggle" data-toggle="dropdown" type="button">学生成绩修改</button>
+                <ul class="dropdown-menu">
+                    <li><a href="http://localhost:63342/database/HTML/inputScore.html">成绩输入与学生总学分</a></li>
+                    <li><a href="#">成绩名次排名</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--右部框体-->
+<div style="margin-left: 25%;width: 75%;vertical-align: top;">
+<!--    上部控件框体-->
+    <div style="width: 90%;border-radius: 10px;margin: 2% 5% 2% 5%;border: 1px solid gray;box-shadow: 5px 5px 5px grey;">
+        <p style="text-align: right;">
+            <span>
+                <span style="font-size: 24px;letter-spacing: 5px;">学年选择:</span>
+                <select id="chooseSemester_1" style="font-size: 20px;" name="semesterChoose">
+                    <option>大一</option>
+                    <option>大二</option>
+                    <option>大三</option>
+                    <option>大四</option>
+                    <option>全学年</option>
+                </select>
+            </span>
+
+            <button style="width: 25%;background-color: transparent;color: grey;border: none;font-size: 20px;" class="btnbtn-default dropdown-toggle" type="button" data-toggle="collapse" data-target="#collapseDiv1" aria-expanded="false" aria-controls="collapseExample">
+                功能效果筛选
+            </button>
+        </p>
+        <div class="collapse" id="collapseDiv1">
+            <div class="card card-body">
+                <span style="font-size: 20px;padding: 2px;letter-spacing: 2px;">查看人员:</span>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <input type="text" name="choosePerson" style="width: 60%;margin-right: 20px;padding: 5px;">
+                    <button type="button" style="width: 25%" class="btn btn-secondary">筛选</button>
+                </div>
+                <span style="font-size: 20px;padding: 2px;letter-spacing: 2px;">查看某地区:</span>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <input type="text" name="choosePerson" style="width: 60%;margin-right: 20px;padding: 5px;">
+                    <button type="button" style="width: 25%" class="btn btn-secondary">筛选</button>
+                </div>
+                <span style="font-size: 20px;padding: 2px;letter-spacing: 2px;">查看某课程:</span>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <input type="text" name="choosePerson" style="width: 60%;margin-right: 20px;padding: 5px;">
+                    <button type="button" style="width: 25%" class="btn btn-secondary">筛选</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!--    下部表格展示数据-->
+    <div id="showForInfoTable" style="width: 90%;border-radius: 10px;margin: 2% 5% 2% 5%;border: 1px solid gray;padding: 10px;box-shadow: 5px 5px 5px grey;"></div>
+</div>
+
+</body>
+</html>

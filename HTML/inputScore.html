@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>数据库前端页面</title>
+    <!--    <link rel="stylesheet" href="bootstrap/dist/css/bootstrap.min.css">-->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" rel="stylesheet"/>
+
+    <script type="text/javascript" charset="UTF-8" src="jquery/jquery-3.5.1.min.js"></script>
+    <script type="text/javascript" charset="UTF-8" src="jquery/jquery.cookie.js"></script>
+
+    <script type="text/javascript" charset="UTF-8" src="echarts/dist/echarts.min.js"></script>
+
+    <script type="text/javascript" charset="UTF-8" src="gsap/dist/gsap.min.js"></script>
+
+    <!--    <script src="bootstrap/dist/js/bootstrap.min.js"></script>-->
+    <script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>
+    <script src="https://unpkg.com/gridjs/dist/gridjs.production.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            /*border: 1px solid black;*/
+        }
+
+        button {
+            margin: 5px;
+            font-size: 24px;
+            letter-spacing: 2px;
+            border-radius: 10px;
+            outline: none;
+            padding: 5px;
+            color: white;
+            background-color: #00BFFF;
+            width: 96%;
+            border: none;
+        }
+
+        a {
+            margin: 3px;
+            font-size: 28px;
+            letter-spacing: 5px;
+        }
+
+        select {
+            padding: 5px;
+            border-radius: 10px;
+            color: grey;
+        }
+
+        ul li {
+            text-align: center;
+        }
+
+        input {
+            border-radius: 10px;
+            outline: none;
+            border: 1px solid #00BFFF;
+            width: 180px;
+            padding: 6px;
+        }
+
+        .gridjs-search {
+            float: right;
+        }
+
+        .gridjs-pagination .gridjs-pages {
+            float: right;
+            width: 50%;
+        }
+
+        .gridjs-pagination .gridjs-pages button {
+            width: 40%;
+            margin-left: 5%;
+            display: inline-block;
+            padding: 5px 14px;
+            border: 1px solid #d2d6dc;
+            background-color: #fff;
+            border-right: none;
+            outline: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+    </style>
+
+    <script>
+        window.onload = function () {
+            initTable();
+        }
+
+        function setUpdateInfo(item, type) {
+            let getInfo = item.innerHTML.split("/");
+            // console.log(getInfo);
+
+            if(type === "stu") {
+                document.getElementById('inputForStu').value = getInfo[0];
+                document.getElementById('stuName').innerHTML = getInfo[1];
+            } else {
+                document.getElementById('inputForCourse').value = getInfo[0];
+                document.getElementById('courseName').innerHTML = getInfo[1];
+            }
+        }
+
+        function updateNewScore() {
+            let getNewScore = document.getElementById('inputForScore').value;
+            let getSno = document.getElementById('inputForStu').value;
+            let getCno = document.getElementById('inputForCourse').value;
+
+            // console.log(getNewScore);
+            if(getNewScore) {
+                $.ajax({
+                    type: "post",
+                    url: "PHP//backendForDatabase.php",
+                    data: {command: "updateScore", newScore: getNewScore, Sno: getSno, Cno: getCno},
+                    dataType: "json",
+                    success: function (msg) {
+                        // console.log(msg);
+                        let result = jQuery.parseJSON(msg);
+
+                        if(result['result'] === "success") {
+                            document.getElementById('inputForScore').value = "";
+                            getNowScore();
+                        }
+
+                    }
+                });
+                // initTable();
+            }
+        }
+
+        function cleanOldScoreData() {
+            document.getElementById('inputForScore').setAttribute("placeholder", "");
+            document.getElementById('inputForStu').value = "";
+            document.getElementById('inputForCourse').value = "";
+
+            document.getElementById('stuName').innerHTML = "学生名字";
+            document.getElementById('courseName').innerHTML = "课程名字";
+        }
+
+        function getNowScore(){
+            let getSno = document.getElementById('inputForStu').value;
+            let getCno = document.getElementById('inputForCourse').value;
+
+            $.ajax({
+                type: "post",
+                url: "PHP//backendForDatabase.php",
+                data: {command: "getScore", Sno: getSno, Cno: getCno},
+                dataType: "json",
+                success: function (msg) {
+                    // console.log(msg);
+                    let result = jQuery.parseJSON(msg);
+                    document.getElementById('inputForScore').setAttribute(
+                        'placeholder', '当前系统储存成绩为: ' + result['Score']
+                    );
+                }
+            });
+        }
+
+        function addGrid1(getData) {
+            let div = document.getElementById('tableForScore');
+
+            while(div.firstChild) {
+                div.removeChild(div.firstChild);
+            }
+
+            let grid = new gridjs.Grid({
+                columns: ["学生编号", "学生名", "课程编号", "课程名", "成绩"],
+                data: getData,
+                search: true,
+                pagination: {
+                    limit: 10,
+                    buttonsCount: false
+                },
+                sort: true
+            }).render(document.getElementById("tableForScore"));
+            grid.forceRender();
+        }
+
+        function addGrid2(getData) {
+            let div = document.getElementById('tableForTotalCredit');
+
+            while(div.firstChild) {
+                div.removeChild(div.firstChild);
+            }
+
+            let grid = new gridjs.Grid({
+                columns: ["学生编号", "姓名", "已修总学分"],
+                data: getData,
+                search: true,
+                pagination: {
+                    limit: 10,
+                    buttonsCount: false
+                },
+                sort: true
+            }).render(document.getElementById("tableForTotalCredit"));
+            grid.forceRender();
+        }
+
+        function initTable () {
+            $.ajax({
+                type: "post",
+                url: "PHP//backendForDatabase.php",
+                data: {command: "allStuScore"},
+                dataType: "json",
+                success: function (msg) {
+                    console.log(msg);
+                    let result = jQuery.parseJSON(msg);
+
+                    let getData = [];
+
+                    for(let i = 0; result["Sno" + i]; i ++) {
+                        let newArray = [result["Sno"+i], result['Sname'+i],
+                            result['Cno'+i], result['Cname'+i],
+                            result['Score'+i]];
+                        // console.log(newArray);
+                        getData[i] = (newArray);
+                    }
+                    console.log(getData);
+                    addGrid1(getData);
+                }
+            });
+            $.ajax({
+                type: "post",
+                url: "PHP//backendForDatabase.php",
+                data: {command: "ATCredit"},
+                dataType: "json",
+                success: function (msg) {
+                    // console.log(msg);
+                    let result = jQuery.parseJSON(msg);
+
+                    let getData = [];
+
+                    for(let i = 0; result["Sno" + i]; i ++) {
+                        let newArray = [result["Sno"+i], result['Sname'+i],
+                            result['ATCredit'+i]];
+                        // console.log(newArray);
+                        getData[i] = (newArray);
+                    }
+                    // console.log(getData);
+                    addGrid2(getData);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+<!--左部框体-->
+<div style="width: 25%;height: 100%;position: fixed;box-shadow: 5px 5px 5px grey;">
+    <!--    左上部标题-->
+    <div style="font-size: 36px;text-align: center;padding: 5px;width: 100%;letter-spacing: 5px;">数据库前端页面</div>
+
+    <!--    左部选择按钮组-->
+    <div style="text-align: center;">
+        <div class="btn-group-vertical" style="width: 100%;">
+            <div class="btn-group">
+                <button class="btnbtn-default dropdown-toggle" data-toggle="dropdown" type="button">学生成绩</button>
+                <ul class="dropdown-menu">
+                    <li><a href="http://localhost:63342/database/HTML/main.html">学年成绩统计</a></li>
+                    <li><a>成绩名次排名</a></li>
+                    <li><a href="http://localhost:63342/database/HTML/totalCredit.html">总学分</a></li>
+                </ul>
+            </div>
+
+            <div class="btn-group">
+                <button class="btnbtn-default dropdown-toggle" data-toggle="dropdown" type="button">课程成绩</button>
+                <ul class="dropdown-menu">
+                    <li><a href="http://localhost:63342/database/HTML/classScore.html">每门课程平均成绩</a></li>
+                    <li><a>成绩名次排名</a></li>
+                    <li><a href="http://localhost:63342/database/HTML/studentChooseClass.html">学生所选课程</a></li>
+                </ul>
+            </div>
+
+            <button onclick="window.location.href = 'http://localhost:63342/database/HTML/teacherClass.html'" class="btnbtn-default" type="button">教师任课课程查询</button>
+
+            <button onclick="window.location.href = 'http://localhost:63342/database/HTML/classCourse.html'" class="btnbtn-default" type="button">班级开设课设查询</button>
+
+            <div class="btn-group">
+                <button class="btnbtn-default dropdown-toggle" data-toggle="dropdown" type="button">学生成绩修改</button>
+                <ul class="dropdown-menu">
+                    <li><a href="http://localhost:63342/database/HTML/inputScore.html">成绩输入与学生总学分</a></li>
+                    <li><a>成绩名次排名</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--右部框体-->
+<div style="margin-left: 25%;width: 75%;vertical-align: top;">
+    <!--    上部控件框体-->
+    <div style="width: 90%;border-radius: 10px;margin: 2% 5% 2% 5%;text-align: right;border: 1px solid gray;box-shadow: 5px 5px 5px grey;">
+        <p style="text-align: right;">
+            <button style="width: 20%" type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
+                修改成绩数据
+            </button>
+
+        <div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" style="width: 200px;font-size: 32px;" id="exampleModalCenterTitle">选择修改内容</h5>
+                        <button onclick="cleanOldScoreData()" style="width: 50px;text-align: right;" type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="text-align: center;">
+                        <label style="font-size: 28px;">学生编号:</label>
+                        <input id="inputForStu" type="text" style="text-align: center;font-size: 20px;">
+                        <div class="btn-group dropright">
+                            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                查看所有
+                            </button>
+                            <div class="dropdown-menu" style="width: 320px;">
+                                <div style="display: inline-block">
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S01/苏姿婷</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S02/张政霖</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S03/李志宏</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S04/陈素达</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S05/王采珮</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S06/夏雅惠</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S07/叶元映</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S08/陈枝盈</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S09/高成彦</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S10/金雅琪</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S11/叶洁启</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S12/张诗刚</button>
+                                </div>
+                                <div style="display: inline-block">
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S13/苏玮伦</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S14/林芳江</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S15/江骏生</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S16/黄儒纯</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S17/杨凡靖</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S18/彭正仁</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S19/邓家伟</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S20/刘佳雨</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S21/李治火</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S22/林石美</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S23/陈韦荣</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'stu');" style="font-size: 16px;">S24/钟伦军</button>
+                                </div>
+                            </div>
+                        </div>
+                        <br />
+                        <span id="stuName" style="color: grey;font-size: 18px;letter-spacing: 5px;">学生名字</span>
+                        <br />
+
+                        <label style="font-size: 28px;">课程编号:</label>
+                        <input id="inputForCourse" type="text" style="text-align: center;font-size: 20px;">
+                        <div class="btn-group dropright">
+                            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                查看所有
+                            </button>
+                            <div class="dropdown-menu" style="width: 500px;">
+                                <div style="display: inline-block">
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C01/高等数学</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C02/中国现代史纲要</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C03/大学英语</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C04/户外健身</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C05/程序设计基础C</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C06/生活中的化学</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C07/面向对象Java编程</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C08/面向对象程序设计</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C09/田径中级班</button>
+                                </div>
+                                <div style="display: inline-block">
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C10/HTML前端设计</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C11/数据结构</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C12/概率论</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C13/离散数学</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C14/WEB技术开发</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C15/谈判技巧与技术</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C16/计算机网络原理</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C17/实时操作系统</button>
+                                    <button class="dropdown-item" onclick="setUpdateInfo(this, 'course');" style="font-size: 16px;">C18/数据库技术</button>
+                                </div>
+                            </div>
+                        </div>
+                        <br />
+                        <span id="courseName" style="color: grey;font-size: 18px;letter-spacing: 5px;">课程名字</span>
+                        <br />
+                        <button onclick="getNowScore()" type="button" class="btn btn-primary">检查当前成绩</button>
+
+                        <label style="font-size: 28px;">成绩:</label>
+                        <input id="inputForScore" type="text" style="width: 80%;text-align: center;height: 40px;font-size: 20px;">
+
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" onclick="cleanOldScoreData()" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="button" onclick="updateNewScore()" class="btn btn-primary">修改</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            <span>
+                <span style="font-size: 24px;letter-spacing: 5px;">成绩选别:</span>
+                <select id="chooseSemester_1" style="font-size: 20px;" name="semesterChoose">
+                    <option>无限制</option>
+                    <option>85分及以上</option>
+                    <option>60分及以上</option>
+                    <option>60分以下</option>
+                    <option>45分以下</option>
+                </select>
+            </span>
+
+            <button style="width: 25%;background-color: transparent;color: grey;border: none;font-size: 20px;" class="btnbtn-default dropdown-toggle" type="button" data-toggle="collapse" data-target="#collapseDiv1" aria-expanded="false" aria-controls="collapseExample">
+                功能效果筛选
+            </button>
+        </p>
+        <div class="collapse" id="collapseDiv1">
+            <div class="card card-body">
+                <span style="font-size: 20px;padding: 2px;letter-spacing: 2px;">查看人员:</span>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <input type="text" name="choosePerson" style="width: 60%;margin-right: 20px;padding: 5px;">
+                    <button id="filterOneStu" type="button" style="width: 25%" class="btn btn-secondary">筛选</button>
+                </div>
+                <span style="font-size: 20px;padding: 2px;letter-spacing: 2px;">查看某地区:</span>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <input type="text" name="choosePerson" style="width: 60%;margin-right: 20px;padding: 5px;">
+                    <button id="filterOneArea" type="button" style="width: 25%" class="btn btn-secondary">筛选</button>
+                </div>
+                <span style="font-size: 20px;padding: 2px;letter-spacing: 2px;">查看某课程:</span>
+                <div class="btn-group" role="group" aria-label="Basic example">
+                    <input type="text" name="choosePerson" style="width: 60%;margin-right: 20px;padding: 5px;">
+                    <button id="filterOneClass" type="button" style="width: 25%" class="btn btn-secondary">筛选</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--    下部表格展示数据-->
+    <div id="showForInfoTable" style="width: 90%;border-radius: 10px;margin: 2% 5% 2% 5%;border: 1px solid gray;padding: 10px;box-shadow: 5px 5px 5px grey;">
+<!--        成绩表-->
+        <p style="font-size: 24px;letter-spacing: 5px;">学生成绩表</p>
+        <div class="table" id="tableForScore" style="margin-top: 20px;"></div>
+
+<!--        总学分表-->
+        <p style="font-size: 24px;letter-spacing: 5px;">学生已修总学分表</p>
+        <div class="table" id="tableForTotalCredit" style="margin-top: 20px;"></div>
+    </div>
+</div>
+
+</body>
+</html>
